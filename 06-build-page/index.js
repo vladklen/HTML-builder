@@ -1,12 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const { pipeline } = require('node:stream/promises');
 
-let newPath = path.join(__dirname, 'project-dist');
-let oldPath = path.join(__dirname, 'assets');
+const newPath = path.join(__dirname, 'project-dist');
+const oldPath = path.join(__dirname, 'assets');
 const cssPath = path.join(__dirname, 'styles');
 const componentsPath = path.join(__dirname, 'components');
-const bundle = fs.createWriteStream(`${newPath}/style.css`);
 let htmlContent = '';
 
 async function readHtml(fileName) {
@@ -14,48 +12,56 @@ async function readHtml(fileName) {
   return data.toString();
 }
 
-function generateHtml() {
-  readHtml(path.join(__dirname, 'template.html')).then((result) => {
-    htmlContent = result;
-    const data = fs.promises.readdir(componentsPath).then((data) => {
-      data.forEach((file) => {
-        if (file.split('.')[1] === 'html') {
-          let tag = file.split('.')[0];
-          readHtml(`${componentsPath}/${file}`)
-            .then((result) => {
-              htmlContent = htmlContent.replace(`{{${tag}}}`, result);
-            })
-            .then(() => {
-              const indexHtml = fs.createWriteStream(`${newPath}/index.html`);
-              fs.writeFile(`${newPath}/index.html`, htmlContent, (err) => {
-                if (err) {
-                  console.error(err);
-                }
-              });
+async function changeHtml() {
+  const data = await fs.promises.readdir(componentsPath).then((data) => {
+    data.forEach((file) => {
+      if (file.split('.')[1] === 'html') {
+        let tag = file.split('.')[0];
+        readHtml(`${componentsPath}/${file}`)
+          .then((result) => {
+            htmlContent = htmlContent.replace(`{{${tag}}}`, result);
+          })
+          .then(() => {
+            const indexHtml = fs.createWriteStream(`${newPath}/index.html`);
+            fs.writeFile(`${newPath}/index.html`, htmlContent, (err) => {
+              if (err) {
+                console.error(err);
+              }
             });
-        }
-      });
+          });
+      }
     });
   });
 }
 
-fs.promises.readdir(cssPath).then((data) => {
-  data.forEach((file) => {
-    if (file.toString().split('.')[1] === 'css') {
-      const stream = fs.createReadStream(`${cssPath}/${file}`, 'utf-8');
-      let data = '';
-      stream.on('data', (chunk) => (data += chunk));
-      stream.on('end', () => bundle.write(data));
-    }
-  });
-});
+const generateHtml = () => {
+  readHtml(path.join(__dirname, 'template.html'))
+    .then((result) => (htmlContent = result))
+    .then(() => changeHtml());
+};
 
-fs.promises.mkdir(newPath, { recursive: true }, function (err) {
-  if (err) console.log(err);
-});
-fs.promises.mkdir(`${newPath}/assets`, { recursive: true }, function (err) {
-  if (err) console.log(err);
-});
+const createFolders = () => {
+  fs.promises.mkdir(newPath, { recursive: true }, function (err) {
+    if (err) console.log(err);
+  });
+  fs.promises.mkdir(`${newPath}/assets`, { recursive: true }, function (err) {
+    if (err) console.log(err);
+  });
+};
+
+const createCssBundle = () => {
+  const bundle = fs.createWriteStream(`${newPath}/style.css`);
+  fs.promises.readdir(cssPath).then((data) => {
+    data.forEach((file) => {
+      if (file.toString().split('.')[1] === 'css') {
+        const stream = fs.createReadStream(`${cssPath}/${file}`, 'utf-8');
+        let data = '';
+        stream.on('data', (chunk) => (data += chunk));
+        stream.on('end', () => bundle.write(data));
+      }
+    });
+  });
+};
 
 const copyDir = (path) => {
   fs.readdir(path, { withFileTypes: true }, (err, data) => {
@@ -80,5 +86,7 @@ const copyFile = (file, path) => {
   });
 };
 
+createFolders();
+createCssBundle();
 copyDir(oldPath);
 generateHtml();
