@@ -12,10 +12,12 @@ const copyDir = () => {
 
   fs.readdir(oldPath, (err, data) => {
     data.forEach((file) => {
-      fs.copyFile(`${oldPath}/${file}`, `${newPath}/${file}`, (err) => {
-        if (err) throw err;
-        console.log(`file was copied`);
-      });
+      if (file.split('.')[1] && file.split('.')[1].length > 0) {
+        fs.copyFile(`${oldPath}/${file}`, `${newPath}/${file}`, (err) => {
+          if (err) throw err;
+          console.log(`file was copied`);
+        });
+      }
     });
   });
 };
