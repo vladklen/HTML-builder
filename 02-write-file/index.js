@@ -4,17 +4,7 @@ const path = require('path');
 
 const filePath = path.join(__dirname, 'text.txt');
 
-try {
-  if (fs.existsSync(filePath)) {
-    console.log('Фаил есть');
-  } else {
-    fs.writeFile(path.join(__dirname, 'text.txt'), '', (err) => {
-      if (err) throw err;
-    });
-  }
-} catch (err) {
-  console.error(err);
-}
+const output = fs.createWriteStream(`${filePath}`);
 
 stdout.write('Введите текст:\n');
 stdin.on('data', (data) => {
@@ -22,8 +12,7 @@ stdin.on('data', (data) => {
   if (text.trim() === 'exit') {
     process.exit();
   } else {
-    console.log(text);
-    fs.appendFileSync(filePath, `${text}`);
+    output.write(text);
   }
 });
 
