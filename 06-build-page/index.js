@@ -19,7 +19,7 @@ async function changeHtml() {
         let tag = file.split('.')[0];
         readHtml(`${componentsPath}/${file}`)
           .then((result) => {
-            htmlContent = htmlContent.replace(`{{${tag}}}`, result);
+            htmlContent = htmlContent.replaceAll(`{{${tag}}}`, result);
           })
           .then(() => {
             const indexHtml = fs.createWriteStream(`${newPath}/index.html`);
